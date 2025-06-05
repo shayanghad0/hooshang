@@ -1,67 +1,206 @@
-def time_to_seconds(time_str):
-    """Convert 'h:m' string to total seconds."""
-    try:
-        parts = time_str.strip().split(":")
-        if len(parts) != 2:
-            return None
-        hours = int(parts[0])
-        minutes = int(parts[1])
-        return hours * 3600 + minutes * 60
-    except:
-        return None
+import sys
+from datetime import datetime
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QPushButton, QLabel, QVBoxLayout,
+    QHBoxLayout, QLineEdit, QTextEdit, QRadioButton, QFrame,
+    QScrollArea, QGridLayout
+)
+from PyQt5.QtCore import Qt, QTimer, QPoint
+from PyQt5.QtGui import QFont, QFontDatabase
 
-def seconds_to_hms(seconds):
-    """Convert seconds to 'HH : MM : SS' format."""
-    h = seconds // 3600
-    m = (seconds % 3600) // 60
-    s = seconds % 60
-    return f"{h:02d} : {m:02d} : {s:02d}"
+class HooshangDashboard(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("داشبورد هوشنگ")
+        self.setGeometry(150, 150, 800, 700)
+        self.setWindowFlags(Qt.FramelessWindowHint)
 
-def generate_study_plan(time_have_str, lesson_count_str):
-    total_seconds = time_to_seconds(time_have_str)
-    if total_seconds is None:
-        return "Khatâ: Lotfan zaman ra be sorat 'hour:minute' vared konid (mesal: 2:35)."
+        self.load_font()
+        self.init_ui()
+        self.apply_light_theme()
 
-    try:
-        lesson_count = int(lesson_count_str)
-        if lesson_count <= 0:
-            return "Khatâ: Tedad dars-ha bayad mosbat bashad."
-    except:
-        return "Khatâ: Tedad dars-ha ra be dorosti vared konid."
+        self.is_dragging = False
+        self.start_pos = QPoint(0, 0)
 
-    break_ratio = 0.15
-    break_count = max(lesson_count - 1, 0)
-    total_units = lesson_count + break_count * break_ratio
+    def load_font(self):
+        font_path = "Vazirmatn-Regular.ttf"
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        if font_id != -1:
+            family = QFontDatabase.applicationFontFamilies(font_id)[0]
+            self.setFont(QFont(family))
 
-    seconds_per_unit = total_seconds / total_units
-    lesson_time_sec = seconds_per_unit
-    break_time_sec = seconds_per_unit * break_ratio
+    def init_ui(self):
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setSpacing(15)
 
-    plan = f"🌟 Barname Darsi 🌟\n\n"
-    plan += f"📚 Tedad dars-ha: {lesson_count}\n"
-    plan += f"⏰ Zaman koll: {seconds_to_hms(total_seconds)} (HH : MM : SS)\n"
-    plan += f"🔍 Esteraahat: {int(break_ratio * 100)}%\n\n"
-    plan += "📋 Barname zamani:\n"
+        # هدر
+        header_frame = QFrame()
+        header = QHBoxLayout(header_frame)
+        header.setContentsMargins(15, 10, 15, 10)
 
-    total_used_sec = 0
-    for i in range(lesson_count):
-        plan += f"▶️ Dars {i+1}: {seconds_to_hms(int(lesson_time_sec))} (HH : MM : SS)\n"
-        total_used_sec += lesson_time_sec
-        if i < lesson_count - 1:
-            plan += f"   ⏸️ Esteraahat: {seconds_to_hms(int(break_time_sec))} (HH : MM : SS)\n"
-            total_used_sec += break_time_sec
+        self.dark_btn = QPushButton("🌙")
+        self.light_btn = QPushButton("☀️")
+        self.close_btn = QPushButton("❌")
+        self.rgb_label = QLabel("به هوشنگ خوش اومدی!")
+        self.rgb_label.setAlignment(Qt.AlignCenter)
+        self.rgb_label.setFont(QFont("Vazir", 20, QFont.Bold))
 
-    plan += f"\n⌛ Zaman koll ba esteraahat: {seconds_to_hms(int(total_used_sec))} (HH : MM : SS)\n"
-    plan += "\n💡 No'kat motâle'e:\n"
-    plan += "• Dar mohiti arâm va bedoon havas-pardazi motâle'e kon\n"
-    plan += "• Az Pomodoro estefâde kon (25 daghighe motâle'e, 5 daghighe esteraahat)\n"
-    plan += "• Kholâse-nevisi ro farâmoush nakon\n"
+        for btn in [self.dark_btn, self.light_btn, self.close_btn]:
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setFixedWidth(40)
+            btn.setFixedHeight(40)
 
-    return plan
+        self.dark_btn.clicked.connect(self.apply_dark_theme)
+        self.light_btn.clicked.connect(self.apply_light_theme)
+        self.close_btn.clicked.connect(self.close)
+
+        header.addWidget(self.dark_btn)
+        header.addWidget(self.light_btn)
+        header.addWidget(self.rgb_label, stretch=1)
+        header.addWidget(self.close_btn)
+
+        # درس‌ها
+        subject_frame = QFrame()
+        subject_grid = QGridLayout(subject_frame)
+        subject_grid.setSpacing(10)
+
+        self.subject_buttons = []
+        subjects = ["اجتماعی", "فارسی", "علوم", "عربی", "هدیه", "ریاضی", "قرآن", "زبان"]
+        for i, subject in enumerate(subjects):
+            rb = QRadioButton(f"  {subject}")
+            rb.setCursor(Qt.PointingHandCursor)
+            rb.setFont(QFont("Vazir", 11))
+            self.subject_buttons.append(rb)
+            subject_grid.addWidget(rb, i // 4, i % 4)
+        self.subject_buttons[0].setChecked(True)
+
+        # ورودی
+        input_frame = QFrame()
+        input_layout = QVBoxLayout(input_frame)
+
+        self.time_have = QLineEdit()
+        self.time_have.setPlaceholderText("چقدر وقت داری برای درس خوندن؟ (ساعت)")
+        self.lesson_count = QLineEdit()
+        self.lesson_count.setPlaceholderText("چند تا درس باید بخونی؟")
+
+        for inp in [self.time_have, self.lesson_count]:
+            inp.setMinimumHeight(45)
+            inp.setFont(QFont("Vazir", 11))
+            input_layout.addWidget(inp)
+
+        # خروجی
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+
+        output_frame = QFrame()
+        output_layout = QVBoxLayout(output_frame)
+
+        self.log_output = QTextEdit()
+        self.log_output.setPlaceholderText("📜 نتیجه برنامه‌ریزی اینجا نمایش داده می‌شود...")
+        self.log_output.setReadOnly(True)
+        self.log_output.setFont(QFont("Vazir", 11))
+        self.log_output.setMinimumHeight(200)
+        output_layout.addWidget(self.log_output)
+
+        scroll.setWidget(output_frame)
+
+        # دکمه‌ها
+        button_layout = QHBoxLayout()
+        self.start_btn = QPushButton("🚀 شروع برنامه‌ریزی")
+        self.export_btn = QPushButton("💾 ذخیره برنامه")
+        self.clear_btn = QPushButton("🗑️ پاک کردن")
+
+        for btn in [self.start_btn, self.export_btn, self.clear_btn]:
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setFixedHeight(50)
+            btn.setFont(QFont("Vazir", 11))
+            button_layout.addWidget(btn)
+
+        self.start_btn.clicked.connect(self.generate_study_plan)
+        self.export_btn.clicked.connect(self.export_study_plan)
+        self.clear_btn.clicked.connect(self.clear_output)
+
+        # افزودن به چیدمان کلی
+        self.main_layout.addWidget(header_frame)
+        self.main_layout.addWidget(subject_frame)
+        self.main_layout.addWidget(input_frame)
+        self.main_layout.addWidget(scroll)
+        self.main_layout.addLayout(button_layout)
+
+        self.setLayout(self.main_layout)
+
+    def apply_dark_theme(self):
+        self.setStyleSheet("background-color: #1e1e2f; color: white;")
+
+    def apply_light_theme(self):
+        self.setStyleSheet("background-color: #f5f5f5; color: black;")
+
+    def generate_study_plan(self):
+        subject = next((rb.text().strip() for rb in self.subject_buttons if rb.isChecked()), "درس")
+        time_have = self.time_have.text()
+        lesson_count = self.lesson_count.text()
+
+        try:
+            time_have_float = float(time_have)
+            lesson_count_int = int(lesson_count)
+        except ValueError:
+            self.log_output.setPlainText("❌ لطفاً زمان و تعداد درس را به‌صورت عدد وارد کن.")
+            return
+
+        if lesson_count_int <= 0 or time_have_float <= 0:
+            self.log_output.setPlainText("❌ مقدار زمان و تعداد درس باید بیشتر از صفر باشد.")
+            return
+
+        break_ratio = 0.15
+        total_lessons = lesson_count_int
+        total_breaks = lesson_count_int - 1
+        unit_blocks = total_lessons + (total_breaks * break_ratio)
+        unit_time = time_have_float / unit_blocks
+
+        lesson_time = unit_time
+        break_time = unit_time * break_ratio
+
+        plan = f"📌 برنامه‌ریزی برای درس: {subject}\n"
+        plan += f"\n📝 تعداد درس‌ها: {lesson_count_int}"
+        plan += f"\n🕒 کل زمان مطالعه: {time_have_float:.2f} ساعت\n"
+        plan += f"\n📋 زمان‌بندی پیشنهادی:\n"
+
+        total_used = 0
+        for i in range(lesson_count_int):
+            plan += f"  📖 درس {i+1}: {lesson_time:.2f} ساعت\n"
+            total_used += lesson_time
+            if i < lesson_count_int - 1:
+                plan += f"    ☕ استراحت: {break_time:.2f} ساعت\n"
+                total_used += break_time
+
+        plan += f"\n🔚 مجموع زمان (با استراحت): {total_used:.2f} ساعت\n"
+
+        plan += "\n📚 نکات:\n"
+        plan += "- محیط آرام برای مطالعه انتخاب کن.\n"
+        plan += "- از تایمر استفاده کن (مثل تکنیک پومودورو).\n"
+        plan += "- یادداشت‌برداری و مرور را فراموش نکن!\n"
+
+        self.log_output.setPlainText(plan)
+
+    def export_study_plan(self):
+        if not self.log_output.toPlainText().strip():
+            return
+
+        study_plan = self.log_output.toPlainText()
+        subject = next((rb.text().strip() for rb in self.subject_buttons if rb.isChecked()), "برنامه")
+
+        now = datetime.now().strftime("%Y%m%d-%H%M%S")
+        filename = f"{subject}_{now}.txt"
+
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(study_plan)
+
+    def clear_output(self):
+        self.log_output.clear()
 
 if __name__ == "__main__":
-    time_input = input("Zaman ra be sorat 'saat:daghighe' vared konid (mesal 2:35): ")
-    lesson_input = input("Tedad dars-ha ra vared konid: ")
-
-    result = generate_study_plan(time_input, lesson_input)
-    print("\n" + result)
+    app = QApplication(sys.argv)
+    window = HooshangDashboard()
+    window.show()
+    sys.exit(app.exec_())
