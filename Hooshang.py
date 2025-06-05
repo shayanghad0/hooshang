@@ -5,8 +5,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout, QLineEdit, QTextEdit, QRadioButton, QFrame,
     QScrollArea, QGridLayout
 )
-from PyQt5.QtCore import Qt, QTimer, QPoint
-from PyQt5.QtGui import QFont, QFontDatabase
+from PyQt5.QtCore import Qt, QPoint
 
 class HooshangDashboard(QWidget):
     def __init__(self):
@@ -15,19 +14,11 @@ class HooshangDashboard(QWidget):
         self.setGeometry(150, 150, 800, 700)
         self.setWindowFlags(Qt.FramelessWindowHint)
 
-        self.load_font()
         self.init_ui()
         self.apply_light_theme()
 
         self.is_dragging = False
         self.start_pos = QPoint(0, 0)
-
-    def load_font(self):
-        font_path = "Vazirmatn-Regular.ttf"
-        font_id = QFontDatabase.addApplicationFont(font_path)
-        if font_id != -1:
-            family = QFontDatabase.applicationFontFamilies(font_id)[0]
-            self.setFont(QFont(family))
 
     def init_ui(self):
         self.main_layout = QVBoxLayout()
@@ -44,7 +35,6 @@ class HooshangDashboard(QWidget):
         self.close_btn = QPushButton("❌")
         self.rgb_label = QLabel("به هوشنگ خوش اومدی!")
         self.rgb_label.setAlignment(Qt.AlignCenter)
-        self.rgb_label.setFont(QFont("Vazir", 20, QFont.Bold))
 
         for btn in [self.dark_btn, self.light_btn, self.close_btn]:
             btn.setCursor(Qt.PointingHandCursor)
@@ -70,7 +60,6 @@ class HooshangDashboard(QWidget):
         for i, subject in enumerate(subjects):
             rb = QRadioButton(f"  {subject}")
             rb.setCursor(Qt.PointingHandCursor)
-            rb.setFont(QFont("Vazir", 11))
             self.subject_buttons.append(rb)
             subject_grid.addWidget(rb, i // 4, i % 4)
         self.subject_buttons[0].setChecked(True)
@@ -86,7 +75,6 @@ class HooshangDashboard(QWidget):
 
         for inp in [self.time_have, self.lesson_count]:
             inp.setMinimumHeight(45)
-            inp.setFont(QFont("Vazir", 11))
             input_layout.addWidget(inp)
 
         # خروجی
@@ -99,7 +87,6 @@ class HooshangDashboard(QWidget):
         self.log_output = QTextEdit()
         self.log_output.setPlaceholderText("📜 نتیجه برنامه‌ریزی اینجا نمایش داده می‌شود...")
         self.log_output.setReadOnly(True)
-        self.log_output.setFont(QFont("Vazir", 11))
         self.log_output.setMinimumHeight(200)
         output_layout.addWidget(self.log_output)
 
@@ -114,7 +101,6 @@ class HooshangDashboard(QWidget):
         for btn in [self.start_btn, self.export_btn, self.clear_btn]:
             btn.setCursor(Qt.PointingHandCursor)
             btn.setFixedHeight(50)
-            btn.setFont(QFont("Vazir", 11))
             button_layout.addWidget(btn)
 
         self.start_btn.clicked.connect(self.generate_study_plan)
@@ -131,10 +117,62 @@ class HooshangDashboard(QWidget):
         self.setLayout(self.main_layout)
 
     def apply_dark_theme(self):
-        self.setStyleSheet("background-color: #1e1e2f; color: white;")
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #121212;
+                color: #eeeeee;
+                font-size: 14px;
+            }
+            QLineEdit, QTextEdit {
+                background-color: #1f1f1f;
+                border: 1px solid #444;
+                color: white;
+                padding: 8px;
+                border-radius: 8px;
+            }
+            QPushButton {
+                background-color: #333;
+                color: white;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+            QRadioButton::indicator {
+                width: 14px;
+                height: 14px;
+            }
+        """)
 
     def apply_light_theme(self):
-        self.setStyleSheet("background-color: #f5f5f5; color: black;")
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f0f0f0;
+                color: #333;
+                font-size: 14px;
+            }
+            QLineEdit, QTextEdit {
+                background-color: white;
+                border: 1px solid #ccc;
+                color: black;
+                padding: 8px;
+                border-radius: 8px;
+            }
+            QPushButton {
+                background-color: #dce4ec;
+                color: black;
+                border-radius: 8px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background-color: #c4d4e0;
+            }
+            QRadioButton::indicator {
+                width: 14px;
+                height: 14px;
+            }
+        """)
 
     def generate_study_plan(self):
         subject = next((rb.text().strip() for rb in self.subject_buttons if rb.isChecked()), "درس")
