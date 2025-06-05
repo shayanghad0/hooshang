@@ -11,11 +11,11 @@ class HooshangDashboard(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("داشبورد هوشنگ")
-        self.setGeometry(150, 150, 800, 700)
+        self.setGeometry(150, 150, 600, 600)
         self.setWindowFlags(Qt.FramelessWindowHint)
 
         self.init_ui()
-        self.apply_light_theme()
+        self.apply_dark_theme()
 
         self.is_dragging = False
         self.start_pos = QPoint(0, 0)
@@ -40,6 +40,16 @@ class HooshangDashboard(QWidget):
             btn.setCursor(Qt.PointingHandCursor)
             btn.setFixedWidth(40)
             btn.setFixedHeight(40)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(255, 255, 255, 0.2);
+                    border-radius: 20px;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 0.3);
+                }
+            """)
 
         self.dark_btn.clicked.connect(self.apply_dark_theme)
         self.light_btn.clicked.connect(self.apply_light_theme)
@@ -118,59 +128,71 @@ class HooshangDashboard(QWidget):
 
     def apply_dark_theme(self):
         self.setStyleSheet("""
-            QWidget {
-                background-color: #121212;
-                color: #eeeeee;
+            QWidget { background-color: #1a1a2e; color: #e0e0e0; }
+            QLineEdit {
+                background-color: #16213e; border: 2px solid #0f3460;
+                color: #fff; padding: 8px; border-radius: 12px;
                 font-size: 14px;
             }
-            QLineEdit, QTextEdit {
-                background-color: #1f1f1f;
-                border: 1px solid #444;
-                color: white;
-                padding: 8px;
-                border-radius: 8px;
+            QTextEdit {
+                background-color: #16213e; border: 2px solid #0f3460;
+                color: #fff; padding: 10px; border-radius: 12px;
+                font-size: 14px;
             }
             QPushButton {
-                background-color: #333;
-                color: white;
-                border-radius: 8px;
-                padding: 8px 16px;
+                background-color: #0f3460; color: white;
+                border-radius: 12px; padding: 10px;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #555;
+                background-color: #16213e;
+            }
+            QRadioButton {
+                color: #e0e0e0; padding: 8px;
+                font-size: 14px;
             }
             QRadioButton::indicator {
-                width: 14px;
-                height: 14px;
+                width: 15px; height: 15px;
+            }
+            QRadioButton::indicator:checked {
+                background-color: #0f3460;
+                border: 2px solid #e0e0e0;
+                border-radius: 7px;
             }
         """)
 
     def apply_light_theme(self):
         self.setStyleSheet("""
-            QWidget {
-                background-color: #f0f0f0;
-                color: #333;
+            QWidget { background-color: #f0f2f5; color: #2d3436; }
+            QLineEdit {
+                background-color: white; border: 2px solid #dfe6e9;
+                color: #2d3436; padding: 8px; border-radius: 12px;
                 font-size: 14px;
             }
-            QLineEdit, QTextEdit {
-                background-color: white;
-                border: 1px solid #ccc;
-                color: black;
-                padding: 8px;
-                border-radius: 8px;
+            QTextEdit {
+                background-color: white; border: 2px solid #dfe6e9;
+                color: #2d3436; padding: 10px; border-radius: 12px;
+                font-size: 14px;
             }
             QPushButton {
-                background-color: #dce4ec;
-                color: black;
-                border-radius: 8px;
-                padding: 8px 16px;
+                background-color: #6c5ce7; color: white;
+                border-radius: 12px; padding: 10px;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #c4d4e0;
+                background-color: #5f48e5;
+            }
+            QRadioButton {
+                color: #2d3436; padding: 8px;
+                font-size: 14px;
             }
             QRadioButton::indicator {
-                width: 14px;
-                height: 14px;
+                width: 15px; height: 15px;
+            }
+            QRadioButton::indicator:checked {
+                background-color: #6c5ce7;
+                border: 2px solid #2d3436;
+                border-radius: 7px;
             }
         """)
 
