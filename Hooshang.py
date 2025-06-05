@@ -1,47 +1,67 @@
-def generate_study_plan(time_have, lesson_count):
+def time_to_seconds(time_str):
+    """Convert 'h:m' string to total seconds."""
     try:
-        time_have_float = float(time_have)
-        lesson_count_int = int(lesson_count)
-    except ValueError:
-        return "Khatâ: Lotfan adad dorost vared konid."
+        parts = time_str.strip().split(":")
+        if len(parts) != 2:
+            return None
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        return hours * 3600 + minutes * 60
+    except:
+        return None
 
-    if lesson_count_int <= 0 or time_have_float <= 0:
-        return "Khatâ: Meghdâr-ha bayad mosbat bashand."
+def seconds_to_hms(seconds):
+    """Convert seconds to 'HH : MM : SS' format."""
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    s = seconds % 60
+    return f"{h:02d} : {m:02d} : {s:02d}"
 
-    break_ratio = 0.15  # 15% baraye esteraahat
-    break_count = max(lesson_count_int - 1, 0)
-    total_unit = lesson_count_int + break_count * break_ratio
+def generate_study_plan(time_have_str, lesson_count_str):
+    total_seconds = time_to_seconds(time_have_str)
+    if total_seconds is None:
+        return "Khatâ: Lotfan zaman ra be sorat 'hour:minute' vared konid (mesal: 2:35)."
 
-    unit_time = time_have_float / total_unit
-    lesson_time = unit_time
-    break_time = unit_time * break_ratio
+    try:
+        lesson_count = int(lesson_count_str)
+        if lesson_count <= 0:
+            return "Khatâ: Tedad dars-ha bayad mosbat bashad."
+    except:
+        return "Khatâ: Tedad dars-ha ra be dorosti vared konid."
 
-    study_plan = f"🌟 Barname Darsi 🌟\n\n"
-    study_plan += f"📚 Tedad dars-ha: {lesson_count_int}\n"
-    study_plan += f"⏰ Zaman koll: {time_have_float} sâ'at\n"
-    study_plan += f"🔍 Esteraahat: {int(break_ratio * 100)}%\n\n"
-    study_plan += "📋 Barname zamani:\n"
+    break_ratio = 0.15
+    break_count = max(lesson_count - 1, 0)
+    total_units = lesson_count + break_count * break_ratio
 
-    total_used = 0
-    for i in range(lesson_count_int):
-        study_plan += f"▶️ Dars {i+1}: {lesson_time:.2f} sâ'at\n"
-        total_used += lesson_time
-        if i < lesson_count_int - 1:
-            study_plan += f"   ⏸️ Esteraahat: {break_time:.2f} sâ'at\n"
-            total_used += break_time
+    seconds_per_unit = total_seconds / total_units
+    lesson_time_sec = seconds_per_unit
+    break_time_sec = seconds_per_unit * break_ratio
 
-    study_plan += f"\n⌛ Zaman koll ba esteraahat: {total_used:.2f} sâ'at\n"
+    plan = f"🌟 Barname Darsi 🌟\n\n"
+    plan += f"📚 Tedad dars-ha: {lesson_count}\n"
+    plan += f"⏰ Zaman koll: {seconds_to_hms(total_seconds)} (HH : MM : SS)\n"
+    plan += f"🔍 Esteraahat: {int(break_ratio * 100)}%\n\n"
+    plan += "📋 Barname zamani:\n"
 
-    study_plan += "\n💡 No'kat motâle'e:\n"
-    study_plan += "• Dar mohiti arâm va bedoon havas-pardazi motâle'e kon\n"
-    study_plan += "• Az Pomodoro estefâde kon (25 daghighe motâle'e, 5 daghighe esteraahat)\n"
-    study_plan += "• Kholâse-nevisi ro farâmoush nakon\n"
+    total_used_sec = 0
+    for i in range(lesson_count):
+        plan += f"▶️ Dars {i+1}: {seconds_to_hms(int(lesson_time_sec))} (HH : MM : SS)\n"
+        total_used_sec += lesson_time_sec
+        if i < lesson_count - 1:
+            plan += f"   ⏸️ Esteraahat: {seconds_to_hms(int(break_time_sec))} (HH : MM : SS)\n"
+            total_used_sec += break_time_sec
 
-    return study_plan
+    plan += f"\n⌛ Zaman koll ba esteraahat: {seconds_to_hms(int(total_used_sec))} (HH : MM : SS)\n"
+    plan += "\n💡 No'kat motâle'e:\n"
+    plan += "• Dar mohiti arâm va bedoon havas-pardazi motâle'e kon\n"
+    plan += "• Az Pomodoro estefâde kon (25 daghighe motâle'e, 5 daghighe esteraahat)\n"
+    plan += "• Kholâse-nevisi ro farâmoush nakon\n"
+
+    return plan
 
 if __name__ == "__main__":
-    time_have = input("Zaman dar sâ'at ra vared konid: ")
-    lesson_count = input("Tedad dars-ha ra vared konid: ")
+    time_input = input("Zaman ra be sorat 'saat:daghighe' vared konid (mesal 2:35): ")
+    lesson_input = input("Tedad dars-ha ra vared konid: ")
 
-    result = generate_study_plan(time_have, lesson_count)
+    result = generate_study_plan(time_input, lesson_input)
     print("\n" + result)
